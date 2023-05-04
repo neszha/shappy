@@ -9,6 +9,8 @@ WIFI_SSID = 'neszha'
 WIFI_PASSWORD = '12345678'
 
 ## Inisialisasi variabel global.
+threadRunCounter = 0
+threadMainRunner = True
 wlan = network.WLAN(network.STA_IF)
 
 ## Inisialisasi variabel pin.
@@ -17,61 +19,74 @@ pinLdrHome = machine.ADC(machine.Pin(35))
 
 ## Mengkoneksikan ke wifi.
 def connectToWifi():
+    global threadMainRunner
     print('Mengkoneksikan ke WiFi...')
     wlan.active(True)
     wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-    while not wlan.isconnected():
+    while not wlan.isconnected() and threadMainRunner:
         time.sleep(1)
-    print('Terkoneksi ke WiFi!')
+    if threadMainRunner:
+        print('Terkoneksi ke WiFi!')
 
 ## Fungsi maping nilai.
 def map(value, in_min, in_max, out_min, out_max):
     return (value - in_min) * (out_max - out_min) // (in_max - in_min) + out_min
 
 ## Thread: Connection Thread.
-threadConnectionRunner = True
 def threadConnection(threadName, threadNumber):
+    global threadRunCounter, threadMainRunner
     print('Thread:', threadName, threadNumber)
+    threadRunCounter += 1
     connectToWifi()
 
     ## Mengecek koneksi (reconect WiFi).
-    while threadConnectionRunner:
+    while threadMainRunner:
+        print("threadConnection", threadMainRunner)
         if not wlan.isconnected():
             print('Koneksi WiFi terputus!')
             wlan.active(False)
             connectToWifi()
-    time.sleep(1)
+        time.sleep(1)
+    
+    threadRunCounter -= 1
+    _thread.exit()
 
 ## Thread: Home Light
-threadHomeLightRunner = True
 def threadHomeLight(threadName, threadNumber):
+    global threadRunCounter, threadMainRunner
     print('Thread:', threadName, threadNumber)
-    while threadHomeLightRunner:
+    threadRunCounter += 1
+
+    while threadMainRunner:
+        print("threadHomeLight", threadMainRunner)
         # Membaca konfigurasi home light.
         auto = True
 
         # Membaca nilai LDR.
         pinLdrHomeValue = map(pinLdrHome.read(), 0, 4095, 0, 255)
-        print(pinLdrHomeValue)
+        print(pinLdrHome.read(), pinLdrHomeValue)
 
         # Thread limiter.
         time.sleep(0.5)
+
+    threadRunCounter -= 1
+    _thread.exit()
     
 
 ## Thread: Garden Light
-threadGardenLightRunner = True
 def threadGardenLight(threadName, threadNumber):
     print('Thread:', threadName, threadNumber)
+    _thread.exit()
 
 ## Thread: Montion Detector
-threadMontionDetectorRunner = True
 def threadMontionDetector(threadName, threadNumber):
     print('Thread:', threadName, threadNumber)
+    _thread.exit()
 
 ## Thread: Automatic Gate
-threadAutomaticGateRunner = True
 def threadAutomaticGate(threadName, threadNumber):
     print('Thread:', threadName, threadNumber)
+    _thread.exit()
 
 ## Inisialisasi threads program.
 try:
@@ -83,7 +98,6 @@ try:
 except:
     print('Gagal membuat threads.')
 
-threadMainRunner = True
 while threadMainRunner:
     # Membaca nilai tombol stop program.
     pinBtnStopValue = pinBtnStop.value()
@@ -94,11 +108,10 @@ while threadMainRunner:
     time.sleep(0.1)
 
 ## Menghentikan semua thread.
-print("EXITING PROGRAM...")
-threadConnectionRunner = False
-threadHomeLightRunner = False
-threadGardenLightRunner = False
-threadMontionDetectorRunner = False
-threadAutomaticGateRunner = False
-time.sleep(2)
-sys.exit(0)
+threadMainRunner = False
+print('EXITING PROGRAM...')
+while threadRunCounter > 0:
+    print('Menghentikan threads:', threadRunCounter)
+    time.sleep(0.1)
+print('Menghentikan threads:', threadRunCounter)
+sys.exit()

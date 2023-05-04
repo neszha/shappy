@@ -81,3 +81,7 @@ main,
 footer {
     padding-left: 0;
 }
+
+.card .card-content .card-title {
+    display: inline !important;
+}
