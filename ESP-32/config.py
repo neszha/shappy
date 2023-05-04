@@ -1,3 +1,3 @@
 # Konfigurasi koneksi.
-WIFI_SSID = '.'
-WIFI_PASSWORD = 'pppppppp'
+WIFI_SSID = 'neszha'
+WIFI_PASSWORD = '12345678'

@@ -1,26 +1,43 @@
+import sys
+import time
+import config
+import _thread
 import network
+import machine
 
+## Inisialisasi pin.
+btnStop = machine.Pin(4, machine.Pin.IN)
 
-def connectoToWifi: 
-    pass
+## Inisialisasi koneksi WiFi.
+wlan = network.WLAN(network.STA_IF)
+wlan.active(True)
 
-# # set up WiFi credentials
-# ssid = "."
-# password = "pppppppppp"
+## Mengkoneksikan ke wifi.
+def connectToWifi():
+    print('Mengkoneksikan ke WiFi...')
+    wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
+    while not wlan.isconnected():
+        time.sleep(1)
+    print('Terkoneksi ke WiFi!')
 
-# # create a WLAN object
-# wlan = network.WLAN(network.STA_IF)
+## Thread: Connection Thread.
+def connectionThread(threadName, threadNumber):
+    print('Thread:', threadName, threadNumber)
+    connectToWifi()
 
-# # activate the WLAN interface
-# wlan.active(True)
+## Membuat threads.
+try:
+    _thread.start_new_thread(connectionThread, ('Connection Thread', 1))
+except:
+    print('Gagal membuat threads pada boot.')
 
-# # connect to the WiFi network
-# wlan.connect(ssid, password)
+while True:
+    # Membaca nilai tombol stop sistem.
+    btnStopValue = btnStop.value()
+    print('btnStopValue', btnStopValue)
+    if btnStopValue == 1:
+        sys.exit(0) 
 
-# # wait for connection
-# while not wlan.isconnected():
-#     pass
+    # Limiter.
+    time.sleep(0.5)
 
-# # print connection details
-# print("Connected to WiFi")
-# print("IP address:", wlan.ifconfig()[0])
