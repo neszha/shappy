@@ -10,11 +10,11 @@ btnStop = machine.Pin(4, machine.Pin.IN)
 
 ## Inisialisasi koneksi WiFi.
 wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
 
 ## Mengkoneksikan ke wifi.
 def connectToWifi():
     print('Mengkoneksikan ke WiFi...')
+    wlan.active(True)
     wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
     while not wlan.isconnected():
         time.sleep(1)
@@ -25,6 +25,14 @@ def connectionThread(threadName, threadNumber):
     print('Thread:', threadName, threadNumber)
     connectToWifi()
 
+    ## Mengecek koneksi (reconect WiFi).
+    while True:
+        if not wlan.isconnected():
+            print('Koneksi WiFi terputus!')
+            wlan.active(False)
+            connectToWifi()
+    time.sleep(1)
+
 ## Membuat threads.
 try:
     _thread.start_new_thread(connectionThread, ('Connection Thread', 1))
@@ -34,9 +42,8 @@ except:
 while True:
     # Membaca nilai tombol stop sistem.
     btnStopValue = btnStop.value()
-    print('btnStopValue', btnStopValue)
     if btnStopValue == 1:
-        sys.exit(0) 
+        sys.exit() 
 
     # Limiter.
     time.sleep(0.5)
