@@ -16,6 +16,8 @@ wlan = network.WLAN(network.STA_IF)
 ## Inisialisasi variabel pin.
 pinBtnStop = machine.Pin(4, machine.Pin.IN)
 pinLdrHome = machine.ADC(machine.Pin(35))
+pinLdrHome.atten(machine.ADC.ATTN_11DB)  # Rentang tegangan 0-3.6V
+pinLdrHome.width(machine.ADC.WIDTH_12BIT)  # Resolusi 12-bit (0-4095)
 
 ## Mengkoneksikan ke wifi.
 def connectToWifi():
@@ -112,6 +114,6 @@ threadMainRunner = False
 print('EXITING PROGRAM...')
 while threadRunCounter > 0:
     print('Menghentikan threads:', threadRunCounter)
-    time.sleep(0.1)
+    time.sleep(0.05)
 print('Menghentikan threads:', threadRunCounter)
 sys.exit()
