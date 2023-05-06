@@ -1,23 +1,32 @@
 import sys
 import time
+import ujson
 import _thread
 import network
 import machine
+import urequests
 
 ## Konfigurasi.
 WIFI_SSID = 'neszha'
 WIFI_PASSWORD = '12345678'
+BASE_URL = 'http://192.168.1.5:8000'
 
 ## Inisialisasi variabel global.
 threadRunCounter = 0
 threadMainRunner = True
 wlan = network.WLAN(network.STA_IF)
+deviceStateAPI = ujson.loads('{}')
+deviceState = ujson.loads('{}')
+stateStorageName = 'state.json'
 
-## Inisialisasi variabel pin.
+## Inisialisasi variabel pin INPUT.
 pinBtnStop = machine.Pin(4, machine.Pin.IN)
 pinLdrHome = machine.ADC(machine.Pin(35))
 pinLdrHome.atten(machine.ADC.ATTN_11DB)  # Rentang tegangan 0-3.6V
 pinLdrHome.width(machine.ADC.WIDTH_12BIT)  # Resolusi 12-bit (0-4095)
+
+## Inisialisasi variabel pin OUTPUT.
+pinHomeLight = machine.Pin(23, machine.Pin.OUT)
 
 ## Mengkoneksikan ke wifi.
 def connectToWifi():
@@ -34,20 +43,71 @@ def connectToWifi():
 def map(value, in_min, in_max, out_min, out_max):
     return (value - in_min) * (out_max - out_min) // (in_max - in_min) + out_min
 
+## Membaca data device state dari file storage.
+def readDeviceSteteFromStorage():
+    global deviceState
+    try:
+        with open(stateStorageName, 'r') as file:
+            jsonString = file.read()
+            deviceState = ujson.loads(jsonString)
+    except:
+        print('INF: File state.json tidak ada!')
+
+## Menyimpan data device state ke file storage.
+def saveDeviceStateToStorage():
+    global deviceState
+    with open(stateStorageName, 'w') as file:
+        jsonString = ujson.dumps(deviceState)
+        file.write(jsonString)
+
+## Mengambol data device state dari API server.
+def getDeviceStateFromAPI():
+    global deviceState, deviceStateAPI
+    url = BASE_URL + '/api/device/state?from=esp-32'
+    try:
+        response = urequests.get(url)
+        dataJson = response.json()
+        deviceStateAPI = dataJson['data']
+        saveDeviceStateToStorage()
+        response.close()
+    except:
+        print('ERR: Mengambil device state!')
+
+## Update data device state le API server.
+def updateDeviceStateToAPI():
+    url = BASE_URL + '/api/device/state?from=esp-32'
+    headers = {'Content-Type': 'application/json'}
+    jsonString = ujson.dumps(deviceState)
+    try:
+        print('API: Update device state...')
+        urequests.put(url, data=jsonString, headers=headers)
+    except:
+        print('ERR: Update device state!')
+
 ## Thread: Connection Thread.
 def threadConnection(threadName, threadNumber):
-    global threadRunCounter, threadMainRunner
+    global threadRunCounter, threadMainRunner, deviceState
     print('Thread:', threadName, threadNumber)
     threadRunCounter += 1
     connectToWifi()
 
-    ## Mengecek koneksi (reconect WiFi).
+    ## Menjalankan thread runtime.
     while threadMainRunner:
-        print("threadConnection", threadMainRunner)
+        ## Mengecek koneksi (reconect WiFi).
         if not wlan.isconnected():
             print('Koneksi WiFi terputus!')
             wlan.active(False)
             connectToWifi()
+        else:
+            ## Mengambil data state dari API.
+            getDeviceStateFromAPI()
+
+            ## Singkronisasi data state.
+            if deviceStateAPI != deviceState:
+                updateDeviceStateToAPI()
+                deviceState = deviceStateAPI.copy()
+
+        ## Thread limiter.
         time.sleep(1)
     
     threadRunCounter -= 1
@@ -59,14 +119,30 @@ def threadHomeLight(threadName, threadNumber):
     print('Thread:', threadName, threadNumber)
     threadRunCounter += 1
 
+    ## Menjalankan thread runtime.
     while threadMainRunner:
-        print("threadHomeLight", threadMainRunner)
         # Membaca konfigurasi home light.
-        auto = True
-
+        homeLightState = deviceState.get('homeLight', {})
+        sensitivity = homeLightState.get('sensitivity', 255)
+        modeAuto = homeLightState.get('auto', True)
+        
         # Membaca nilai LDR.
-        pinLdrHomeValue = map(pinLdrHome.read(), 0, 4095, 0, 255)
-        print(pinLdrHome.read(), pinLdrHomeValue)
+        ldrHomeAnalogValue = pinLdrHome.read()
+        pinLdrHomeValue = map(ldrHomeAnalogValue, 0, 4095, 0, 255)
+        print("LDR Home Light:", pinLdrHomeValue, '| Sensitivity:', sensitivity, '| Auto:', modeAuto)
+
+        # Kontrol output sinyal
+        if not modeAuto:
+            pinHomeLight.on()
+            deviceState.setdefault('homeLight', {})['isActive'] = True
+        else:
+            if pinLdrHomeValue < sensitivity:
+                pinHomeLight.on()
+                deviceState.setdefault('homeLight', {})['isActive'] = True
+                time.sleep(1)
+            else:
+                pinHomeLight.off()
+                deviceState.setdefault('homeLight', {})['isActive'] = False
 
         # Thread limiter.
         time.sleep(0.5)
@@ -89,6 +165,9 @@ def threadMontionDetector(threadName, threadNumber):
 def threadAutomaticGate(threadName, threadNumber):
     print('Thread:', threadName, threadNumber)
     _thread.exit()
+
+## Memnaca lokal state.
+readDeviceSteteFromStorage()
 
 ## Inisialisasi threads program.
 try:
@@ -117,3 +196,4 @@ while threadRunCounter > 0:
     time.sleep(0.05)
 print('Menghentikan threads:', threadRunCounter)
 sys.exit()
+

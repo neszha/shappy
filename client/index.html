@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/assets/plugin/materialize/css/materialize.min.css">
 </head>
 
-<body>
+<body id="app">
     <nav>
         <div class="nav-wrapper blue-grey darken-3">
             <ul class="left">
@@ -30,17 +30,24 @@
                     <div class="card-content white-text">
                         <div style="margin-bottom: 12px;">
                             <span class="card-title">Lampu Rumah</span>
-                            <span class="new badge blue" data-badge-caption="">Lampu Aktif</span>
+                            <span v-if="homeLight.isActive" class="new badge green" data-badge-caption="">Status: Aktif</span>
+                            <span v-else class="new badge red" data-badge-caption="">Status: Mati</span>
                         </div>
-                        <p>Tingkat sensitivitas:</p>
+                        <p>
+                            <span>Tingkat sensitivitas: </span>
+                            <span class="text-white">{{ homeLight.sensitivity || '-' }}</span>
+                        </p>
                         <form action="#">
                             <p class="range-field">
-                                <input type="range" id="test5" min="0" max="255" />
+                                <input @change="sensitivityOnChange" :value="homeLight.sensitivity" name="homeLight" type="range" min="0" max="255" />
                             </p>
                         </form>
                     </div>
                     <div class="card-action">
-                        <a href="#">MODE: AUTO</a>
+                        <a @click="modeOnChange('homeLight')" href="javascript:void(0)">
+                            <span v-if="homeLight.auto">MODE: AUTO</span>
+                            <span v-else>MODE: MANUAL</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -88,14 +95,16 @@
     <footer class="page-footer">
         <div class="footer-copyright">
             <div class="container white-text center">
-                2022 &copy; <a href="/">Shappy</a> | Smart Home System 
+                2022 &copy; <a href="/">Shappy</a> | Smart Home System
             </div>
         </div>
     </footer>
 
     <script src="/assets/plugin/jquery/jquery.min.js"></script>
+    <script src="/assets/plugin/vue3/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/main.js"></script>
     <script src="/assets/plugin/materialize/js/materialize.min.js"></script>
-
 </body>
 
 </html>

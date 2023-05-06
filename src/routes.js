@@ -3,6 +3,8 @@ import controllers from './controllers.js'
 
 const route = Router()
 
-/** API: Megambil data peserta. */
+/** APIS */
+route.get('/api/device/state', controllers.getDeviceState)
+route.put('/api/device/state', controllers.updateDeviceState)
 
 export default route
