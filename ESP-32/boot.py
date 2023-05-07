@@ -27,12 +27,14 @@ pinLdrHome.width(machine.ADC.WIDTH_12BIT)  # Resolusi 12-bit (0-4095)
 pinLdrGarden = machine.ADC(machine.Pin(32))
 pinLdrGarden.atten(machine.ADC.ATTN_11DB)  # Rentang tegangan 0-3.6V
 pinLdrGarden.width(machine.ADC.WIDTH_12BIT)  # Resolusi 12-bit (0-4095)
+pinPir = machine.Pin(13, machine.Pin.IN)
 
 ## Inisialisasi variabel pin OUTPUT.
 pinConnectionIndicatorRed = machine.Pin(4, machine.Pin.OUT)
 pinConnectionIndicatorGreen = machine.Pin(17, machine.Pin.OUT)
 pinHomeLight = machine.Pin(5, machine.Pin.OUT)
 pinGardenLight = machine.Pin(18, machine.Pin.OUT)
+pinBuzzer = machine.Pin(27, machine.Pin.OUT)
 
 ## Mengkoneksikan ke wifi.
 def connectToWifi():
@@ -55,6 +57,7 @@ def stateBegin():
     pinGardenLight.off()
     pinConnectionIndicatorRed.off()
     pinConnectionIndicatorGreen.off()
+    pinBuzzer.off()
 
 ## Membaca data device state dari file storage.
 def readDeviceSteteFromStorage():
@@ -166,6 +169,7 @@ def threadHomeLight(threadName, threadNumber):
         # Thread limiter.
         time.sleep(0.5)
 
+    # Proses thread selesai.
     threadRunCounter -= 1
     _thread.exit()
     
@@ -204,12 +208,35 @@ def threadGardenLight(threadName, threadNumber):
         # Thread limiter.
         time.sleep(0.5)
 
+    # Proses thread selesai.
     threadRunCounter -= 1
     _thread.exit()
 
 ## Thread: Montion Detector
 def threadMontionDetector(threadName, threadNumber):
+    global threadRunCounter, threadMainRunner
     print('Thread:', threadName, threadNumber)
+    threadRunCounter += 1
+
+    # Menjalankan thread runtime.
+    while threadMainRunner:
+        # Membaca nilai sensor PIR.
+        pinPirValue = pinPir.value()
+
+        # Aksi ketika terdeteksi.
+        if pinPirValue == 1:
+            pinBuzzer.on()
+            print('Gerakan terdekteksi!')
+            time.sleep(2)
+        else:
+            pinBuzzer.off()
+            time.sleep(0.5)
+
+        # Thread limiter.
+        time.sleep(1)
+
+    # Proses thread selesai.
+    threadRunCounter -= 1
     _thread.exit()
 
 ## Thread: Automatic Gate
