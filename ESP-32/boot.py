@@ -9,7 +9,7 @@ import urequests
 ## Konfigurasi.
 WIFI_SSID = 'neszha'
 WIFI_PASSWORD = '12345678'
-BASE_URL = 'http://192.168.1.5:8000'
+BASE_URL = 'http://192.168.137.1:8000'
 
 ## Inisialisasi variabel global.
 threadRunCounter = 0
@@ -21,12 +21,16 @@ stateStorageName = 'state.json'
 
 ## Inisialisasi variabel pin INPUT.
 pinBtnStop = machine.Pin(4, machine.Pin.IN)
-pinLdrHome = machine.ADC(machine.Pin(35))
+pinLdrHome = machine.ADC(machine.Pin(33))
 pinLdrHome.atten(machine.ADC.ATTN_11DB)  # Rentang tegangan 0-3.6V
 pinLdrHome.width(machine.ADC.WIDTH_12BIT)  # Resolusi 12-bit (0-4095)
+pinLdrGarden = machine.ADC(machine.Pin(32))
+pinLdrGarden.atten(machine.ADC.ATTN_11DB)  # Rentang tegangan 0-3.6V
+pinLdrGarden.width(machine.ADC.WIDTH_12BIT)  # Resolusi 12-bit (0-4095)
 
 ## Inisialisasi variabel pin OUTPUT.
-pinHomeLight = machine.Pin(23, machine.Pin.OUT)
+pinHomeLight = machine.Pin(5, machine.Pin.OUT)
+pinGardenLight = machine.Pin(18, machine.Pin.OUT)
 
 ## Mengkoneksikan ke wifi.
 def connectToWifi():
@@ -42,6 +46,11 @@ def connectToWifi():
 ## Fungsi maping nilai.
 def map(value, in_min, in_max, out_min, out_max):
     return (value - in_min) * (out_max - out_min) // (in_max - in_min) + out_min
+
+## Inisialisasi kondisi awal.
+def stateBegin():
+    pinHomeLight.off()
+    pinGardenLight.off()
 
 ## Membaca data device state dari file storage.
 def readDeviceSteteFromStorage():
@@ -153,7 +162,39 @@ def threadHomeLight(threadName, threadNumber):
 
 ## Thread: Garden Light
 def threadGardenLight(threadName, threadNumber):
+    global threadRunCounter, threadMainRunner
     print('Thread:', threadName, threadNumber)
+    threadRunCounter += 1
+
+    ## Menjalankan thread runtime.
+    while threadMainRunner:
+        # Membaca konfigurasi garden light.
+        gardenLightState = deviceState.get('gardenLight', {})
+        sensitivity = gardenLightState.get('sensitivity', 255)
+        modeAuto = gardenLightState.get('auto', True)
+        
+        # Membaca nilai LDR.
+        ldrHGardenAnalogValue = pinLdrGarden.read()
+        pinLdrGardenValue = map(ldrHGardenAnalogValue, 0, 4095, 0, 255)
+        print("LDR Garden Light:", pinLdrGardenValue, '| Sensitivity:', sensitivity, '| Auto:', modeAuto)
+
+        # Kontrol output sinyal
+        if not modeAuto:
+            pinGardenLight.on()
+            deviceState.setdefault('gardenLight', {})['isActive'] = True
+        else:
+            if pinLdrGardenValue < sensitivity:
+                pinGardenLight.on()
+                deviceState.setdefault('gardenLight', {})['isActive'] = True
+                time.sleep(1)
+            else:
+                pinGardenLight.off()
+                deviceState.setdefault('gardenLight', {})['isActive'] = False
+
+        # Thread limiter.
+        time.sleep(0.5)
+
+    threadRunCounter -= 1
     _thread.exit()
 
 ## Thread: Montion Detector
@@ -166,7 +207,8 @@ def threadAutomaticGate(threadName, threadNumber):
     print('Thread:', threadName, threadNumber)
     _thread.exit()
 
-## Memnaca lokal state.
+## Jalankan fungsi: setup().
+stateBegin()
 readDeviceSteteFromStorage()
 
 ## Inisialisasi threads program.
@@ -190,10 +232,10 @@ while threadMainRunner:
 
 ## Menghentikan semua thread.
 threadMainRunner = False
+stateBegin()
 print('EXITING PROGRAM...')
 while threadRunCounter > 0:
     print('Menghentikan threads:', threadRunCounter)
     time.sleep(0.05)
 print('Menghentikan threads:', threadRunCounter)
 sys.exit()
-

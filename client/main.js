@@ -6,6 +6,13 @@ const app = Vue.createApp({
                 sensitivity: 255,
                 isActive: false,
             }
+        },
+        gardenLight() {
+            return this.deviceState?.gardenLight || {
+                auto: false,
+                sensitivity: 255,
+                isActive: false,
+            }
         }
     },
 

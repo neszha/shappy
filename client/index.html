@@ -59,17 +59,24 @@
                     <div class="card-content white-text">
                         <div style="margin-bottom: 12px;">
                             <span class="card-title">Lampu Taman</span>
-                            <span class="new badge blue" data-badge-caption="">Lampu Aktif</span>
+                            <span v-if="gardenLight.isActive" class="new badge green" data-badge-caption="">Status: Aktif</span>
+                            <span v-else class="new badge red" data-badge-caption="">Status: Mati</span>
                         </div>
-                        <p>Tingkat sensitivitas:</p>
+                        <p>
+                            <span>Tingkat sensitivitas: </span>
+                            <span class="text-white">{{ gardenLight.sensitivity || '-' }}</span>
+                        </p>
                         <form action="#">
                             <p class="range-field">
-                                <input type="range" id="test5" min="0" max="255" />
+                                <input @change="sensitivityOnChange" :value="gardenLight.sensitivity" name="gardenLight" type="range" min="0" max="255" />
                             </p>
                         </form>
                     </div>
                     <div class="card-action">
-                        <a href="#">MODE: MANUAL</a>
+                        <a @click="modeOnChange('gardenLight')" href="javascript:void(0)">
+                            <span v-if="gardenLight.auto">MODE: AUTO</span>
+                            <span v-else>MODE: MANUAL</span>
+                        </a>
                     </div>
                 </div>
             </div>
