@@ -20,7 +20,7 @@ deviceState = ujson.loads('{}')
 stateStorageName = 'state.json'
 
 ## Inisialisasi variabel pin INPUT.
-pinBtnStop = machine.Pin(4, machine.Pin.IN)
+pinBtnStop = machine.Pin(15, machine.Pin.IN)
 pinLdrHome = machine.ADC(machine.Pin(33))
 pinLdrHome.atten(machine.ADC.ATTN_11DB)  # Rentang tegangan 0-3.6V
 pinLdrHome.width(machine.ADC.WIDTH_12BIT)  # Resolusi 12-bit (0-4095)
@@ -29,6 +29,8 @@ pinLdrGarden.atten(machine.ADC.ATTN_11DB)  # Rentang tegangan 0-3.6V
 pinLdrGarden.width(machine.ADC.WIDTH_12BIT)  # Resolusi 12-bit (0-4095)
 
 ## Inisialisasi variabel pin OUTPUT.
+pinConnectionIndicatorRed = machine.Pin(4, machine.Pin.OUT)
+pinConnectionIndicatorGreen = machine.Pin(17, machine.Pin.OUT)
 pinHomeLight = machine.Pin(5, machine.Pin.OUT)
 pinGardenLight = machine.Pin(18, machine.Pin.OUT)
 
@@ -51,6 +53,8 @@ def map(value, in_min, in_max, out_min, out_max):
 def stateBegin():
     pinHomeLight.off()
     pinGardenLight.off()
+    pinConnectionIndicatorRed.off()
+    pinConnectionIndicatorGreen.off()
 
 ## Membaca data device state dari file storage.
 def readDeviceSteteFromStorage():
@@ -95,19 +99,25 @@ def updateDeviceStateToAPI():
 
 ## Thread: Connection Thread.
 def threadConnection(threadName, threadNumber):
-    global threadRunCounter, threadMainRunner, deviceState
+    global threadRunCounter, threadMainRunner, deviceState, pinConnectionIndicatorGreen
     print('Thread:', threadName, threadNumber)
     threadRunCounter += 1
+    pinConnectionIndicatorRed.on()
     connectToWifi()
 
     ## Menjalankan thread runtime.
     while threadMainRunner:
         ## Mengecek koneksi (reconect WiFi).
         if not wlan.isconnected():
+            pinConnectionIndicatorRed.on()
+            pinConnectionIndicatorGreen.off()
             print('Koneksi WiFi terputus!')
             wlan.active(False)
             connectToWifi()
         else:
+            pinConnectionIndicatorRed.off()
+            pinConnectionIndicatorGreen.on()
+
             ## Mengambil data state dari API.
             getDeviceStateFromAPI()
 
