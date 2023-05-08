@@ -1,3 +1,4 @@
+import moment from "moment/moment.js"
 import redis from "./database/redis.db.js"
 
 const deviceStateKey = 'device-state'
@@ -13,6 +14,43 @@ export default {
             success: true,
             data: deviceState
         })
+    },
+
+    async getActivity(req, res) {
+        const result = {
+            homeLight: [], 
+            gardenLight: [], 
+            montionDetector: []            
+        }
+        const keys = await redis.keys('device-activity:*')
+        for (const key of keys) {
+            const keyData = key.replace('device-activity:', '')
+            const dataString = await redis.get(key)
+            if (dataString) result[keyData] = JSON.parse(dataString).reverse()
+        }
+        return res.json({
+            success: true,
+            data: result
+        })
+    },
+
+    /**
+     * Method: POST
+     */
+    async postActivity(req, res) {
+        const {key, value} = req.body
+        const logSizeLimit = 10
+        let activities = []
+        const redisKey = 'device-activity:' + key
+        const redisData = await redis.get(redisKey)
+        if (redisData) activities = JSON.parse(redisData)
+        const logString =  `[${moment().format('L')} ${moment().format('LTS')}] ${value}`
+        activities.push(logString)
+        if(activities.length > logSizeLimit) {
+            activities = activities.slice(activities.length - logSizeLimit, activities.length)
+        }
+        await redis.set(redisKey, JSON.stringify(activities))
+        return res.json({success: true})
     },
 
     /**
@@ -45,7 +83,6 @@ export default {
             }
             if (montionDetector) {
                 deviceState.montionDetector.isActive = montionDetector.isActive
-                console.log(montionDetector)
             }
         }
         await redis.set(deviceStateKey, JSON.stringify(deviceState))
@@ -53,6 +90,15 @@ export default {
             success: true,
             data: deviceState
         })
+    },
+
+    /**
+     * METHOD: DELETE
+     */
+    async deleteActivity(req, res) {
+        const key = req.params.key
+        await redis.del('device-activity:' + key)
+        return res.json({success: true})
     }
 
 }

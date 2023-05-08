@@ -17,7 +17,7 @@
     <nav>
         <div class="nav-wrapper blue-grey darken-3">
             <ul class="left">
-                <a href="/" class="breadcrumb">Shappy</a>
+                <a href="/" class="breadcrumb">Sheppy</a>
             </ul>
         </div>
     </nav>
@@ -33,6 +33,15 @@
                             <span v-if="homeLight.isActive" class="new badge green" data-badge-caption="">Status: Aktif</span>
                             <span v-else class="new badge red" data-badge-caption="">Status: Mati</span>
                         </div>
+                        <p v-if="activities.homeLight.length">
+                            <span>Rekaman aktifitas: </span>
+                            <a @click="deleteActivity('homeLight')" href="javascript:void(0)">Bersihkan</a>
+                            <ul>
+                                <li v-for="(item, i) of activities.homeLight" :key="i">
+                                    <span>- {{ item }}</span>
+                                </li>
+                            </ul>
+                        </p>
                         <p>
                             <span>Tingkat sensitivitas: </span>
                             <span class="text-white">{{ homeLight.sensitivity || '-' }}</span>
@@ -62,6 +71,15 @@
                             <span v-if="gardenLight.isActive" class="new badge green" data-badge-caption="">Status: Aktif</span>
                             <span v-else class="new badge red" data-badge-caption="">Status: Mati</span>
                         </div>
+                        <p v-if="activities.gardenLight.length">
+                            <span>Rekaman aktifitas: </span>
+                            <a @click="deleteActivity('gardenLight')" href="javascript:void(0)">Bersihkan</a>
+                            <ul>
+                                <li v-for="(item, i) of activities.gardenLight" :key="i">
+                                    <span>- {{ item }}</span>
+                                </li>
+                            </ul>
+                        </p>
                         <p>
                             <span>Tingkat sensitivitas: </span>
                             <span class="text-white">{{ gardenLight.sensitivity || '-' }}</span>
@@ -91,8 +109,14 @@
                             <span v-if="montionDetector.isActive" class="new badge green" data-badge-caption="">Status Alarm: Aktif</span>
                             <span v-else class="new badge red" data-badge-caption="">Status Alarm: Mati</span>
                         </div>
-                        <p>
+                        <p v-if="activities.montionDetector.length">
                             <span>Rekaman aktifitas: </span>
+                            <a @click="deleteActivity('montionDetector')" href="javascript:void(0)">Bersihkan</a>
+                            <ul>
+                                <li v-for="(item, i) of activities.montionDetector" :key="i">
+                                    <span>- {{ item }}</span>
+                                </li>
+                            </ul>
                         </p>
                     </div>
                     <div class="card-action">
@@ -125,7 +149,7 @@
     <footer class="page-footer">
         <div class="footer-copyright">
             <div class="container white-text center">
-                2022 &copy; <a href="/">Shappy</a> | Smart Home System
+                2022 &copy; <a href="/">Sheppy</a> | Smart Home System
             </div>
         </div>
     </footer>

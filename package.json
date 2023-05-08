@@ -1,7 +1,7 @@
 {
-  "name": "shappy",
+  "name": "sheppy",
   "version": "1.0.0",
-  "description": "Shappy: IoT System for Smart Home System",
+  "description": "Sheppy: IoT System for Smart Home System",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -15,6 +15,7 @@
     "dotenv": "^16.0.3",
     "events": "^3.3.0",
     "express": "^4.18.2",
+    "moment": "^2.29.4",
     "morgan": "^1.10.0",
     "random": "^4.1.0",
     "redis": "^4.6.5"

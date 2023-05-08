@@ -90,6 +90,22 @@ def getDeviceStateFromAPI():
     except:
         print('REQUEST ERROR: Mengambil device state!')
 
+## Menyimpan aktifitas perangkat.
+def postDeviceActivity(key, value):
+    if not wlan.isconnected():
+        return
+    url = BASE_URL + '/api/device/activity?from=esp-32'
+    headers = {'Content-Type': 'application/json'}
+    body = {}
+    body['key'] = key
+    body['value'] = value
+    jsonString = ujson.dumps(body)
+    try:
+        print('API: Post device activity...')
+        urequests.post(url, data=jsonString, headers=headers)
+    except:
+        print('REQUEST ERROR: Post device activity!')
+
 ## Update data device state le API server.
 def updateDeviceStateToAPI():
     url = BASE_URL + '/api/device/state?from=esp-32'
@@ -149,6 +165,7 @@ def threadHomeLight(threadName, threadNumber):
         homeLightState = deviceState.get('homeLight', {})
         sensitivity = homeLightState.get('sensitivity', 255)
         modeAuto = homeLightState.get('auto', True)
+        isActive = homeLightState.get('isActive', True)
         
         # Membaca nilai LDR.
         ldrHomeAnalogValue = pinLdrHome.read()
@@ -161,10 +178,14 @@ def threadHomeLight(threadName, threadNumber):
             deviceState.setdefault('homeLight', {})['isActive'] = True
         else:
             if pinLdrHomeValue < sensitivity:
+                if not isActive:
+                    postDeviceActivity('homeLight', 'Lampu rumah menyala!')
                 pinHomeLight.on()
                 deviceState.setdefault('homeLight', {})['isActive'] = True
                 time.sleep(1)
             else:
+                if isActive:
+                    postDeviceActivity('homeLight', 'Lampu rumah mati!')
                 pinHomeLight.off()
                 deviceState.setdefault('homeLight', {})['isActive'] = False
 
@@ -188,6 +209,7 @@ def threadGardenLight(threadName, threadNumber):
         gardenLightState = deviceState.get('gardenLight', {})
         sensitivity = gardenLightState.get('sensitivity', 255)
         modeAuto = gardenLightState.get('auto', True)
+        isActive = gardenLightState.get('isActive', True)
         
         # Membaca nilai LDR.
         ldrHGardenAnalogValue = pinLdrGarden.read()
@@ -200,10 +222,14 @@ def threadGardenLight(threadName, threadNumber):
             deviceState.setdefault('gardenLight', {})['isActive'] = True
         else:
             if pinLdrGardenValue < sensitivity:
+                if not isActive:
+                    postDeviceActivity('gardenLight', 'Lampu taman menyala!')
                 pinGardenLight.on()
                 deviceState.setdefault('gardenLight', {})['isActive'] = True
                 time.sleep(1)
             else:
+                if isActive:
+                    postDeviceActivity('gardenLight', 'Lampu taman mati!')
                 pinGardenLight.off()
                 deviceState.setdefault('gardenLight', {})['isActive'] = False
 
@@ -238,6 +264,7 @@ def threadMontionDetector(threadName, threadNumber):
         else: # Fitur aktif
             if pinPirDigitalValue == 1:
                 pinBuzzer.on()
+                postDeviceActivity('montionDetector', 'Terdeteksi gerakan!')
                 deviceState.setdefault('montionDetector', {})['isActive'] = True
                 time.sleep(5)
                 pinBuzzer.off()

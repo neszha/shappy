@@ -22,7 +22,6 @@ const app = Vue.createApp({
                 isActive: false,
             }
         },
-        
     },
 
     methods: {
@@ -35,10 +34,24 @@ const app = Vue.createApp({
             })
         },
 
+        getDeviceActivity() {
+            const url = '/api/device/activity'
+            return axios.get(url).then(({data}) => {
+                const activities = data.data
+                this.activities = activities
+            })
+        },
+
         updateDeviceState() {
             const url = '/api/device/state?updateType=config'
             const body = this.deviceState
             return axios.put(url, body).catch(() => {})
+        },
+
+        async deleteActivity(key) {
+            const url = '/api/device/activity/' + key
+            await axios.delete(url)
+            this.getDeviceActivity()
         },
 
         /** CONTROLS. */
@@ -58,12 +71,14 @@ const app = Vue.createApp({
         gettingInterval() {
             setInterval(() => {
                 this.getDeviceState()
+                this.getDeviceActivity()
             }, 2000)
         }
     },
 
     async beforeMount() {
         await this.getDeviceState()
+        await this.getDeviceActivity()
         this.gettingInterval()
     },
 
@@ -79,6 +94,11 @@ const app = Vue.createApp({
                 gerdenLight: {},
                 montionDetector: {},
             },
+            activities: {
+                homeLight: [], 
+                gardenLight: [], 
+                montionDetector: []   
+            }
         };
     },
 });
