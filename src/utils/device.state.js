@@ -9,4 +9,8 @@ export default {
         sensitivity: 255,
         isActive: false,
     },
+    montionDetector: {
+        auto: false,
+        isActive: false,
+    },
 }

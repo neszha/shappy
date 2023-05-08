@@ -46,6 +46,7 @@ def connectToWifi():
         time.sleep(1)
     if threadMainRunner:
         print('Terkoneksi ke WiFi!')
+        print('IP Address:', wlan.ifconfig()[0])
 
 ## Fungsi maping nilai.
 def map(value, in_min, in_max, out_min, out_max):
@@ -67,7 +68,7 @@ def readDeviceSteteFromStorage():
             jsonString = file.read()
             deviceState = ujson.loads(jsonString)
     except:
-        print('INF: File state.json tidak ada!')
+        print('INFO: File state.json tidak ada!')
 
 ## Menyimpan data device state ke file storage.
 def saveDeviceStateToStorage():
@@ -87,7 +88,7 @@ def getDeviceStateFromAPI():
         saveDeviceStateToStorage()
         response.close()
     except:
-        print('ERR: Mengambil device state!')
+        print('REQUEST ERROR: Mengambil device state!')
 
 ## Update data device state le API server.
 def updateDeviceStateToAPI():
@@ -98,7 +99,7 @@ def updateDeviceStateToAPI():
         print('API: Update device state...')
         urequests.put(url, data=jsonString, headers=headers)
     except:
-        print('ERR: Update device state!')
+        print('REQUEST ERROR: Update device state!')
 
 ## Thread: Connection Thread.
 def threadConnection(threadName, threadNumber):
@@ -127,6 +128,7 @@ def threadConnection(threadName, threadNumber):
             ## Singkronisasi data state.
             if deviceStateAPI != deviceState:
                 updateDeviceStateToAPI()
+                getDeviceStateFromAPI()
                 deviceState = deviceStateAPI.copy()
 
         ## Thread limiter.
@@ -137,7 +139,7 @@ def threadConnection(threadName, threadNumber):
 
 ## Thread: Home Light
 def threadHomeLight(threadName, threadNumber):
-    global threadRunCounter, threadMainRunner
+    global threadRunCounter, threadMainRunner, deviceState
     print('Thread:', threadName, threadNumber)
     threadRunCounter += 1
 
@@ -176,7 +178,7 @@ def threadHomeLight(threadName, threadNumber):
 
 ## Thread: Garden Light
 def threadGardenLight(threadName, threadNumber):
-    global threadRunCounter, threadMainRunner
+    global threadRunCounter, threadMainRunner, deviceState
     print('Thread:', threadName, threadNumber)
     threadRunCounter += 1
 
@@ -214,26 +216,37 @@ def threadGardenLight(threadName, threadNumber):
 
 ## Thread: Montion Detector
 def threadMontionDetector(threadName, threadNumber):
-    global threadRunCounter, threadMainRunner
+    global threadRunCounter, threadMainRunner, deviceState
     print('Thread:', threadName, threadNumber)
     threadRunCounter += 1
 
     # Menjalankan thread runtime.
     while threadMainRunner:
-        # Membaca nilai sensor PIR.
-        pinPirValue = pinPir.value()
+        # Membaca konfigurasi garden light.
+        montionDetectorState = deviceState.get('montionDetector', {})
+        modeAuto = montionDetectorState.get('auto', False)
+        isAlertActive =montionDetectorState.get('isActive', False)
 
-        # Aksi ketika terdeteksi.
-        if pinPirValue == 1:
-            pinBuzzer.on()
-            print('Gerakan terdekteksi!')
-            time.sleep(2)
-        else:
+        # Membaca nilai sensor PIR.
+        pinPirDigitalValue = pinPir.value()
+        print("PIR:", pinPirDigitalValue, '| Auto:', modeAuto)
+
+        # Kontrol output sinyal
+        if not modeAuto: # Fitur tidak aktif
             pinBuzzer.off()
-            time.sleep(0.5)
+            deviceState.setdefault('montionDetector', {})['isActive'] = False
+        else: # Fitur aktif
+            if pinPirDigitalValue == 1:
+                pinBuzzer.on()
+                deviceState.setdefault('montionDetector', {})['isActive'] = True
+                time.sleep(5)
+                pinBuzzer.off()
+            else:
+                pinBuzzer.off()
+                deviceState.setdefault('montionDetector', {})['isActive'] = False
 
         # Thread limiter.
-        time.sleep(1)
+        time.sleep(0.5)
 
     # Proses thread selesai.
     threadRunCounter -= 1

@@ -82,6 +82,29 @@
             </div>
             <!-- end: Garden light -->
 
+            <!-- Montion Detector -->
+            <div class="col s12">
+                <div class="card blue-grey darken-3">
+                    <div class="card-content white-text">
+                        <div style="margin-bottom: 12px;">
+                            <span class="card-title">Deteksi Pergerakan</span>
+                            <span v-if="montionDetector.isActive" class="new badge green" data-badge-caption="">Status Alarm: Aktif</span>
+                            <span v-else class="new badge red" data-badge-caption="">Status Alarm: Mati</span>
+                        </div>
+                        <p>
+                            <span>Rekaman aktifitas: </span>
+                        </p>
+                    </div>
+                    <div class="card-action">
+                        <a @click="modeOnChange('montionDetector')" href="javascript:void(0)">
+                            <span v-if="montionDetector.auto">MODE: AKTIF</span>
+                            <span v-else>MODE: TIDAK AKTIF</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- end: Montion Detector -->
+
             <!-- <div class="col s12">
                 <div class="card blue-grey darken-3">
                     <div class="card-content white-text">

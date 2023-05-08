@@ -7,13 +7,22 @@ const app = Vue.createApp({
                 isActive: false,
             }
         },
+
         gardenLight() {
             return this.deviceState?.gardenLight || {
                 auto: false,
                 sensitivity: 255,
                 isActive: false,
             }
-        }
+        },
+
+        montionDetector() {
+            return this.deviceState?.montionDetector || {
+                auto: false,
+                isActive: false,
+            }
+        },
+        
     },
 
     methods: {
@@ -66,7 +75,9 @@ const app = Vue.createApp({
         return {
             message: 'Halo, Vue.js 3!',
             deviceState: {
-                homeLight: {}
+                homeLight: {},
+                gerdenLight: {},
+                montionDetector: {},
             },
         };
     },
