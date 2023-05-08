@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "920467665592",
+    "project_id": "my-exams-c230d",
+    "storage_bucket": "my-exams-c230d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:920467665592:android:b177401aa11560b519fa4d",
+        "android_client_info": {
+          "package_name": "com.neszha.myexams"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "920467665592-nq2m7hrvfm14r6u4mb5s5s94qksn31hj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB01Nrp9EmZ5JOr_ePo0V76XoRD6wutiNU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "920467665592-nq2m7hrvfm14r6u4mb5s5s94qksn31hj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

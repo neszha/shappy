@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Sheppy</string>
+    <string name="webview_loading">Memuat konten...</string>
+</resources>
