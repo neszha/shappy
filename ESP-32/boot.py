@@ -35,6 +35,7 @@ pinConnectionIndicatorGreen = machine.Pin(17, machine.Pin.OUT)
 pinHomeLight = machine.Pin(5, machine.Pin.OUT)
 pinGardenLight = machine.Pin(18, machine.Pin.OUT)
 pinBuzzer = machine.Pin(27, machine.Pin.OUT)
+pinPwmServo = machine.PWM(machine.Pin(23), freq=50)
 
 ## Mengkoneksikan ke wifi.
 def connectToWifi():
@@ -59,6 +60,7 @@ def stateBegin():
     pinConnectionIndicatorRed.off()
     pinConnectionIndicatorGreen.off()
     pinBuzzer.off()
+    geteControl('close', 2)
 
 ## Membaca data device state dari file storage.
 def readDeviceSteteFromStorage():
@@ -117,24 +119,50 @@ def updateDeviceStateToAPI():
     except:
         print('REQUEST ERROR: Update device state!')
 
+## Kontrol gerbang.
+def geteControl(command = 'close', smoot = 1):
+    currentPosition = pinPwmServo.duty()
+    if currentPosition > 120:
+        currentPosition = 90
+        pinPwmServo.duty(currentPosition)
+    if command == 'close':
+        targetPosition = 120
+        print('GATE: Menutup gerbang!')
+        while currentPosition < targetPosition:
+            pinPwmServo.duty(currentPosition + smoot)
+            currentPosition = pinPwmServo.duty()
+            time.sleep(0.05)
+        pinPwmServo.duty(targetPosition)
+    elif command == 'open':
+        targetPosition = 70
+        print('GATE: Membuka gerbang!')
+        while currentPosition > targetPosition:
+            pinPwmServo.duty(currentPosition - smoot)
+            currentPosition = pinPwmServo.duty()
+            time.sleep(0.05)
+        pinPwmServo.duty(targetPosition)
+
 ## Thread: Connection Thread.
 def threadConnection(threadName, threadNumber):
     global threadRunCounter, threadMainRunner, deviceState, pinConnectionIndicatorGreen
     print('Thread:', threadName, threadNumber)
     threadRunCounter += 1
     pinConnectionIndicatorRed.on()
+    geteControl('close')
     connectToWifi()
 
     ## Menjalankan thread runtime.
     while threadMainRunner:
         ## Mengecek koneksi (reconect WiFi).
         if not wlan.isconnected():
+            geteControl('close')
             pinConnectionIndicatorRed.on()
             pinConnectionIndicatorGreen.off()
             print('Koneksi WiFi terputus!')
             wlan.active(False)
             connectToWifi()
         else:
+            geteControl('open')
             pinConnectionIndicatorRed.off()
             pinConnectionIndicatorGreen.on()
 
