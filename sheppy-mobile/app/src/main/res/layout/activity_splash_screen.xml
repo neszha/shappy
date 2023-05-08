@@ -10,7 +10,7 @@
     <ImageView
         android:layout_width="104dp"
         android:layout_height="192dp"
-        android:src="@drawable/exam_browser_light"
+        android:src="@drawable/sheppy_light"
         android:contentDescription="@string/app_name"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
