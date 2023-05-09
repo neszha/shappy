@@ -132,8 +132,10 @@
                     <div class="card-content white-text">
                         <div style="margin-bottom: 12px;">
                             <span class="card-title">Gerbang Otomatis</span>
-                            <span v-if="automaticGate.isActive" class="new badge green" data-badge-caption="">Status: Terbuka</span>
-                            <span v-else class="new badge red" data-badge-caption="">Status: Tertutup</span>
+                            <span v-if="automaticGate.auto">
+                                <span v-if="automaticGate.isActive" class="new badge green" data-badge-caption="">Status: Terbuka</span>
+                                <span v-else class="new badge red" data-badge-caption="">Status: Tertutup</span>
+                            </span>
                         </div>
                         <p v-if="activities.automaticGate.length">
                             <span>Rekaman aktifitas: </span>

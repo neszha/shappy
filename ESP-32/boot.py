@@ -299,10 +299,12 @@ def threadMontionDetector(threadName, threadNumber):
         else: # Fitur aktif
             if pinPirDigitalValue == 1:
                 pinBuzzer.on()
-                postDeviceActivity('montionDetector', 'Terdeteksi gerakan!')
                 deviceState.setdefault('montionDetector', {})['isActive'] = True
-                time.sleep(3)
+                updateDeviceStateToAPI()
+                postDeviceActivity('montionDetector', 'Terdeteksi gerakan!')
+                time.sleep(2)
                 pinBuzzer.off()
+                time.sleep(5)
             else:
                 pinBuzzer.off()
                 deviceState.setdefault('montionDetector', {})['isActive'] = False
@@ -341,7 +343,7 @@ def threadAutomaticGate(threadName, threadNumber):
             minDistance = 10
             if ultrasonikDistanceValue <= 10:
                 # Menunggu konfirmasi ulang.
-                time.sleep(2)
+                time.sleep(1.5)
                 ultrasonikDistanceValue = measureDistance()
                 if ultrasonikDistanceValue > 10:
                     continue
