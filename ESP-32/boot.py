@@ -7,8 +7,8 @@ import machine
 import urequests
 
 ## Konfigurasi.
-WIFI_SSID = 'neszha'
-WIFI_PASSWORD = '12345678'
+WIFI_SSID = '.'
+WIFI_PASSWORD = 'pppppppppp'
 BASE_URL = 'http://103.13.206.251:80'
 
 ## Inisialisasi variabel global.
@@ -290,7 +290,7 @@ def threadMontionDetector(threadName, threadNumber):
 
         # Membaca nilai sensor PIR.
         pinPirDigitalValue = pinPir.value()
-        print("PIR:", pinPirDigitalValue, '| Auto:', modeAuto)
+        # print("PIR:", pinPirDigitalValue, '| Auto:', modeAuto)
 
         # Kontrol output sinyal
         if not modeAuto: # Fitur tidak aktif
@@ -379,6 +379,8 @@ stateBegin()
 readDeviceSteteFromStorage()
 
 ## Inisialisasi threads program.
+print('Mambuat threads....')
+time.sleep(1.5)
 try:
     _thread.start_new_thread(threadConnection, ('Connection Thread', 1))
     _thread.start_new_thread(threadHomeLight, ('Home Light', 2))
