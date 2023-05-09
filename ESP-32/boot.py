@@ -20,6 +20,7 @@ deviceState = ujson.loads('{}')
 stateStorageName = 'state.json'
 
 ## Inisialisasi variabel pin INPUT.
+SERVO_PIN = 23
 pinBtnStop = machine.Pin(15, machine.Pin.IN)
 pinLdrHome = machine.ADC(machine.Pin(33))
 pinLdrHome.atten(machine.ADC.ATTN_11DB)  # Rentang tegangan 0-3.6V
@@ -28,6 +29,7 @@ pinLdrGarden = machine.ADC(machine.Pin(32))
 pinLdrGarden.atten(machine.ADC.ATTN_11DB)  # Rentang tegangan 0-3.6V
 pinLdrGarden.width(machine.ADC.WIDTH_12BIT)  # Resolusi 12-bit (0-4095)
 pinPir = machine.Pin(13, machine.Pin.IN)
+pinUltrasonicEcho = machine.Pin(12, machine.Pin.IN)
 
 ## Inisialisasi variabel pin OUTPUT.
 pinConnectionIndicatorRed = machine.Pin(4, machine.Pin.OUT)
@@ -35,7 +37,8 @@ pinConnectionIndicatorGreen = machine.Pin(17, machine.Pin.OUT)
 pinHomeLight = machine.Pin(5, machine.Pin.OUT)
 pinGardenLight = machine.Pin(18, machine.Pin.OUT)
 pinBuzzer = machine.Pin(27, machine.Pin.OUT)
-pinPwmServo = machine.PWM(machine.Pin(23), freq=50)
+pinPwmGateServo = machine.PWM(machine.Pin(SERVO_PIN), freq=50)
+pinUltrasonicTrig = machine.Pin(14, machine.Pin.OUT)
 
 ## Mengkoneksikan ke wifi.
 def connectToWifi():
@@ -60,7 +63,7 @@ def stateBegin():
     pinConnectionIndicatorRed.off()
     pinConnectionIndicatorGreen.off()
     pinBuzzer.off()
-    geteControl('close', 2)
+    gateControl('close')
 
 ## Membaca data device state dari file storage.
 def readDeviceSteteFromStorage():
@@ -119,28 +122,36 @@ def updateDeviceStateToAPI():
     except:
         print('REQUEST ERROR: Update device state!')
 
-## Kontrol gerbang.
-def geteControl(command = 'close', smoot = 1):
-    currentPosition = pinPwmServo.duty()
-    if currentPosition > 120:
-        currentPosition = 90
-        pinPwmServo.duty(currentPosition)
-    if command == 'close':
+## Kontrol buka tutup gerbang.
+def gateControl(command = 'close'):
+    if command == 'open':
+        targetPosition = 72
+        print('GATE: Membuka gerbang!')
+        pinPwmGateServo.duty(targetPosition)
+    elif command == 'close':
         targetPosition = 120
         print('GATE: Menutup gerbang!')
-        while currentPosition < targetPosition:
-            pinPwmServo.duty(currentPosition + smoot)
-            currentPosition = pinPwmServo.duty()
-            time.sleep(0.05)
-        pinPwmServo.duty(targetPosition)
-    elif command == 'open':
-        targetPosition = 70
-        print('GATE: Membuka gerbang!')
-        while currentPosition > targetPosition:
-            pinPwmServo.duty(currentPosition - smoot)
-            currentPosition = pinPwmServo.duty()
-            time.sleep(0.05)
-        pinPwmServo.duty(targetPosition)
+        pinPwmGateServo.duty(targetPosition)
+
+## Memnaca data jarak dengan sensor ultrasonik (cm).
+def measureDistance():
+    # Mengirimkan pluse ultrasonik.
+    pinUltrasonicTrig.off()
+    time.sleep_us(2)
+    pinUltrasonicTrig.on()
+    time.sleep_us(10)
+    pinUltrasonicTrig.off()
+
+    # Membaca waktu yang dibutuhkan untuk ultrasonik kembali.
+    while pinUltrasonicEcho.value() == 0:
+        pulseStart = time.ticks_us()
+    while pinUltrasonicEcho.value() == 1:
+        pulseEnd = time.ticks_us()
+    pulseDuration = pulseEnd - pulseStart
+
+    # Menghitung jarak berdasarkan waktu yang dibutuhkan.
+    distance = (pulseDuration * 0.0343) / 2
+    return distance
 
 ## Thread: Connection Thread.
 def threadConnection(threadName, threadNumber):
@@ -148,21 +159,18 @@ def threadConnection(threadName, threadNumber):
     print('Thread:', threadName, threadNumber)
     threadRunCounter += 1
     pinConnectionIndicatorRed.on()
-    geteControl('close')
     connectToWifi()
 
     ## Menjalankan thread runtime.
     while threadMainRunner:
         ## Mengecek koneksi (reconect WiFi).
         if not wlan.isconnected():
-            geteControl('close')
             pinConnectionIndicatorRed.on()
             pinConnectionIndicatorGreen.off()
             print('Koneksi WiFi terputus!')
             wlan.active(False)
             connectToWifi()
         else:
-            geteControl('open')
             pinConnectionIndicatorRed.off()
             pinConnectionIndicatorGreen.on()
 
@@ -224,7 +232,6 @@ def threadHomeLight(threadName, threadNumber):
     threadRunCounter -= 1
     _thread.exit()
     
-
 ## Thread: Garden Light
 def threadGardenLight(threadName, threadNumber):
     global threadRunCounter, threadMainRunner, deviceState
@@ -294,7 +301,7 @@ def threadMontionDetector(threadName, threadNumber):
                 pinBuzzer.on()
                 postDeviceActivity('montionDetector', 'Terdeteksi gerakan!')
                 deviceState.setdefault('montionDetector', {})['isActive'] = True
-                time.sleep(5)
+                time.sleep(3)
                 pinBuzzer.off()
             else:
                 pinBuzzer.off()
@@ -309,7 +316,60 @@ def threadMontionDetector(threadName, threadNumber):
 
 ## Thread: Automatic Gate
 def threadAutomaticGate(threadName, threadNumber):
+    global threadRunCounter, threadMainRunner, deviceState, pinPwmGateServo
     print('Thread:', threadName, threadNumber)
+    threadRunCounter += 1
+
+    # Menjalankan thread runtime.
+    while threadMainRunner:
+        # Membaca konfigurasi garden light.
+        automaticGateState = deviceState.get('automaticGate', {})
+        modeAuto = automaticGateState.get('auto', False)
+        isGateOpened = automaticGateState.get('isActive', False)
+
+        # Membaca nilai sensor ultrasonik.
+        ultrasonikDistanceValue = measureDistance()
+        print("Ultrasonik:", ultrasonikDistanceValue, '| Opened:', isGateOpened, '| Auto:', modeAuto)
+
+        # Kontrol output sinyal.
+        if not modeAuto: # Fitur tidak aktif
+            pinPwmGateServo.deinit()
+        else: # Fitur aktif
+            pinPwmGateServo = machine.PWM(machine.Pin(SERVO_PIN), freq=50)
+            
+            # Deteksi objek.
+            minDistance = 10
+            if ultrasonikDistanceValue <= 10:
+                # Menunggu konfirmasi ulang.
+                time.sleep(2)
+                ultrasonikDistanceValue = measureDistance()
+                if ultrasonikDistanceValue > 10:
+                    continue
+                
+                # Membuka gerbang.
+                gateControl('open')
+                if not isGateOpened:
+                    deviceState.setdefault('automaticGate', {})['isActive'] = True
+                    postDeviceActivity('automaticGate', 'Gerbang terbuka!')
+                    time.sleep(5)
+            else:
+                # Menunggu konfirmasi ulang.
+                time.sleep(5)
+                ultrasonikDistanceValue = measureDistance()
+                if ultrasonikDistanceValue <= 10:
+                    continue
+
+                # Menutup gerbang.
+                gateControl('close')
+                if isGateOpened:
+                    deviceState.setdefault('automaticGate', {})['isActive'] = False
+                    postDeviceActivity('automaticGate', 'Gerbang terbuka!')
+
+        # Thread limiter.
+        time.sleep(0.5)
+
+    # Proses thread selesai.
+    threadRunCounter -= 1
     _thread.exit()
 
 ## Jalankan fungsi: setup().

@@ -20,7 +20,8 @@ export default {
         const result = {
             homeLight: [], 
             gardenLight: [], 
-            montionDetector: []            
+            montionDetector: [],            
+            automaticGate: []            
         }
         const keys = await redis.keys('device-activity:*')
         for (const key of keys) {
@@ -61,7 +62,7 @@ export default {
         const updateType = req.query.updateType
         const deviceStateJsonString = await redis.get(deviceStateKey)
         const deviceState = JSON.parse(deviceStateJsonString) || {}
-        const {homeLight, gardenLight, montionDetector} = deviceStateBody
+        const {homeLight, gardenLight, montionDetector, automaticGate} = deviceStateBody
         if (updateType === 'config') { // Update config state.
             if (homeLight) {
                 deviceState.homeLight.auto = homeLight.auto
@@ -74,6 +75,9 @@ export default {
             if (montionDetector) {
                 deviceState.montionDetector.auto = montionDetector.auto
             }
+            if (automaticGate) {
+                deviceState.automaticGate.auto = automaticGate.auto
+            }
         } else { // Update value state.
             if (homeLight) {
                 deviceState.homeLight.isActive = homeLight.isActive
@@ -83,6 +87,9 @@ export default {
             }
             if (montionDetector) {
                 deviceState.montionDetector.isActive = montionDetector.isActive
+            }
+            if (automaticGate) {
+                deviceState.automaticGate.isActive = automaticGate.isActive
             }
         }
         await redis.set(deviceStateKey, JSON.stringify(deviceState))

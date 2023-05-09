@@ -22,6 +22,13 @@ const app = Vue.createApp({
                 isActive: false,
             }
         },
+
+        automaticGate() {
+            return this.deviceState?.automaticGate || {
+                auto: false,
+                isActive: false,
+            }
+        }
     },
 
     methods: {
@@ -83,21 +90,22 @@ const app = Vue.createApp({
     },
 
     mounted() {
-        console.log('mounted')
+        //
     },
 
     data() {
         return {
-            message: 'Halo, Vue.js 3!',
             deviceState: {
                 homeLight: {},
                 gerdenLight: {},
                 montionDetector: {},
+                automaticGate: {}
             },
             activities: {
                 homeLight: [], 
                 gardenLight: [], 
-                montionDetector: []   
+                montionDetector: [],
+                automaticGate: []
             }
         };
     },

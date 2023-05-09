@@ -13,4 +13,12 @@ export default {
         auto: false,
         isActive: false,
     },
+    montionDetector: {
+        auto: false,
+        isActive: false,
+    },
+    automaticGate: {
+        auto: false,
+        isActive: false,
+    }
 }

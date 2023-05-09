@@ -1,31 +1,19 @@
 import time
 import machine
 
-pinPwmServo = machine.PWM(machine.Pin(23), freq=50)
+pinPwmGateServo = machine.PWM(machine.Pin(23), freq=50)
 
 ## Kontrol gerbang.
-def geteControl(command = 'close'):
-    smoot = 1
-    currentPosition = pinPwmServo.duty()
-    if currentPosition > 120:
-        currentPosition = 90
-        pinPwmServo.duty(currentPosition)
-    if command == 'close':
+def gateControl(command = 'close'):
+    if command == 'open':
+        targetPosition = 72
+        print('GATE: Membuka gerbang!')
+        pinPwmGateServo.duty(targetPosition)
+    elif command == 'close':
         targetPosition = 120
-        while currentPosition < targetPosition:
-            pinPwmServo.duty(currentPosition + smoot)
-            currentPosition = pinPwmServo.duty()
-            time.sleep(0.05)
-        pinPwmServo.duty(targetPosition)
-    elif command == 'open':
-        targetPosition = 70
-        while currentPosition > targetPosition:
-            pinPwmServo.duty(currentPosition - smoot)
-            currentPosition = pinPwmServo.duty()
-            time.sleep(0.05)
-        pinPwmServo.duty(targetPosition)
+        print('GATE: Menutup gerbang!')
+        pinPwmGateServo.duty(targetPosition)
 
-print('RUNN')
-geteControl('open')
+gateControl('open')
 time.sleep(1)
-geteControl('close')
+gateControl('close')
