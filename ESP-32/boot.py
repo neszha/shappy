@@ -9,7 +9,7 @@ import urequests
 ## Konfigurasi.
 WIFI_SSID = 'neszha'
 WIFI_PASSWORD = '12345678'
-BASE_URL = 'http://192.168.137.1:8000'
+BASE_URL = 'http://103.13.206.251:80'
 
 ## Inisialisasi variabel global.
 threadRunCounter = 0
@@ -365,7 +365,7 @@ def threadAutomaticGate(threadName, threadNumber):
                 gateControl('close')
                 if isGateOpened:
                     deviceState.setdefault('automaticGate', {})['isActive'] = False
-                    postDeviceActivity('automaticGate', 'Gerbang terbuka!')
+                    postDeviceActivity('automaticGate', 'Gerbang tertutup!')
 
         # Thread limiter.
         time.sleep(0.5)
