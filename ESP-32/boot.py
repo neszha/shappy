@@ -120,6 +120,7 @@ def saveDeviceStateToStorage():
 def getDeviceStateFromAPI():
     global deviceState, deviceStateAPI
     url = BASE_URL + '/api/device/state?from=esp-32'
+    pinConnectionIndicatorGreen.off()
     try:
         response = urequests.get(url)
         dataJson = response.json()
@@ -128,11 +129,13 @@ def getDeviceStateFromAPI():
         response.close()
     except:
         print('REQUEST ERROR: Mengambil device state!')
+    pinConnectionIndicatorGreen.on()
 
 ## Menyimpan aktifitas perangkat.
 def postDeviceActivity(key, value):
     if not wlan.isconnected():
         return
+    pinConnectionIndicatorGreen.off()
     url = BASE_URL + '/api/device/activity?from=esp-32'
     headers = {'Content-Type': 'application/json'}
     body = {}
@@ -144,9 +147,11 @@ def postDeviceActivity(key, value):
         urequests.post(url, data=jsonString, headers=headers)
     except:
         print('REQUEST ERROR: Post device activity!')
+    pinConnectionIndicatorGreen.on()
 
 ## Update data device state le API server.
 def updateDeviceStateToAPI():
+    pinConnectionIndicatorGreen.off()
     url = BASE_URL + '/api/device/state?from=esp-32'
     headers = {'Content-Type': 'application/json'}
     jsonString = ujson.dumps(deviceState)
@@ -155,6 +160,7 @@ def updateDeviceStateToAPI():
         urequests.put(url, data=jsonString, headers=headers)
     except:
         print('REQUEST ERROR: Update device state!')
+    pinConnectionIndicatorGreen.on()
 
 ## Thread: Connection Thread.
 def threadConnection(threadName, threadNumber):
