@@ -40,6 +40,19 @@ pinBuzzer = machine.Pin(27, machine.Pin.OUT)
 pinPwmGateServo = machine.PWM(machine.Pin(SERVO_PIN), freq=50)
 pinUltrasonicTrig = machine.Pin(14, machine.Pin.OUT)
 
+## Inisialisasi kondisi awal.
+def stateBegin():
+    pinHomeLight.off()
+    pinGardenLight.off()
+    pinConnectionIndicatorRed.off()
+    pinConnectionIndicatorGreen.off()
+    pinBuzzer.off()
+    gateControl('close')
+
+## Fungsi maping nilai.
+def map(value, in_min, in_max, out_min, out_max):
+    return (value - in_min) * (out_max - out_min) // (in_max - in_min) + out_min
+
 ## Mengkoneksikan ke wifi.
 def connectToWifi():
     global threadMainRunner
@@ -52,18 +65,36 @@ def connectToWifi():
         print('Terkoneksi ke WiFi!')
         print('IP Address:', wlan.ifconfig()[0])
 
-## Fungsi maping nilai.
-def map(value, in_min, in_max, out_min, out_max):
-    return (value - in_min) * (out_max - out_min) // (in_max - in_min) + out_min
+## Kontrol buka tutup gerbang.
+def gateControl(command = 'close'):
+    if command == 'open':
+        targetPosition = 72
+        print('GATE: Membuka gerbang!')
+        pinPwmGateServo.duty(targetPosition)
+    elif command == 'close':
+        targetPosition = 120
+        print('GATE: Menutup gerbang!')
+        pinPwmGateServo.duty(targetPosition)
 
-## Inisialisasi kondisi awal.
-def stateBegin():
-    pinHomeLight.off()
-    pinGardenLight.off()
-    pinConnectionIndicatorRed.off()
-    pinConnectionIndicatorGreen.off()
-    pinBuzzer.off()
-    gateControl('close')
+## Memnaca data jarak dengan sensor ultrasonik (cm).
+def measureDistance():
+    # Mengirimkan pluse ultrasonik.
+    pinUltrasonicTrig.off()
+    time.sleep_us(2)
+    pinUltrasonicTrig.on()
+    time.sleep_us(10)
+    pinUltrasonicTrig.off()
+
+    # Membaca waktu yang dibutuhkan untuk ultrasonik kembali.
+    while pinUltrasonicEcho.value() == 0:
+        pulseStart = time.ticks_us()
+    while pinUltrasonicEcho.value() == 1:
+        pulseEnd = time.ticks_us()
+    pulseDuration = pulseEnd - pulseStart
+
+    # Menghitung jarak berdasarkan waktu yang dibutuhkan.
+    distance = (pulseDuration * 0.0343) / 2
+    return distance
 
 ## Membaca data device state dari file storage.
 def readDeviceSteteFromStorage():
@@ -121,37 +152,6 @@ def updateDeviceStateToAPI():
         urequests.put(url, data=jsonString, headers=headers)
     except:
         print('REQUEST ERROR: Update device state!')
-
-## Kontrol buka tutup gerbang.
-def gateControl(command = 'close'):
-    if command == 'open':
-        targetPosition = 72
-        print('GATE: Membuka gerbang!')
-        pinPwmGateServo.duty(targetPosition)
-    elif command == 'close':
-        targetPosition = 120
-        print('GATE: Menutup gerbang!')
-        pinPwmGateServo.duty(targetPosition)
-
-## Memnaca data jarak dengan sensor ultrasonik (cm).
-def measureDistance():
-    # Mengirimkan pluse ultrasonik.
-    pinUltrasonicTrig.off()
-    time.sleep_us(2)
-    pinUltrasonicTrig.on()
-    time.sleep_us(10)
-    pinUltrasonicTrig.off()
-
-    # Membaca waktu yang dibutuhkan untuk ultrasonik kembali.
-    while pinUltrasonicEcho.value() == 0:
-        pulseStart = time.ticks_us()
-    while pinUltrasonicEcho.value() == 1:
-        pulseEnd = time.ticks_us()
-    pulseDuration = pulseEnd - pulseStart
-
-    # Menghitung jarak berdasarkan waktu yang dibutuhkan.
-    distance = (pulseDuration * 0.0343) / 2
-    return distance
 
 ## Thread: Connection Thread.
 def threadConnection(threadName, threadNumber):
@@ -375,14 +375,14 @@ def threadAutomaticGate(threadName, threadNumber):
     _thread.exit()
 
 ## Jalankan fungsi: setup().
-stateBegin()
 readDeviceSteteFromStorage()
+stateBegin()
 
-## Inisialisasi threads program.
+## Inisialisasi sub-threads program.
 print('Mambuat threads....')
 time.sleep(1.5)
 try:
-    _thread.start_new_thread(threadConnection, ('Connection Thread', 1))
+    _thread.start_new_thread(threadConnection, ('Connection', 1))
     _thread.start_new_thread(threadHomeLight, ('Home Light', 2))
     _thread.start_new_thread(threadGardenLight, ('Garden Light', 3))
     _thread.start_new_thread(threadMontionDetector, ('Montion Detector', 4))
