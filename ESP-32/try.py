@@ -1,19 +1,29 @@
 import time
 import machine
 
-pinPwmGateServo = machine.PWM(machine.Pin(23), freq=50)
+pinUltrasonicEcho = machine.Pin(12, machine.Pin.IN)
+pinUltrasonicTrig = machine.Pin(14, machine.Pin.OUT)
 
-## Kontrol gerbang.
-def gateControl(command = 'close'):
-    if command == 'open':
-        targetPosition = 72
-        print('GATE: Membuka gerbang!')
-        pinPwmGateServo.duty(targetPosition)
-    elif command == 'close':
-        targetPosition = 120
-        print('GATE: Menutup gerbang!')
-        pinPwmGateServo.duty(targetPosition)
+def measureDistance():
+    # Mengirimkan pluse ultrasonik.
+    pinUltrasonicTrig.off()
+    time.sleep_us(2)
+    pinUltrasonicTrig.on()
+    time.sleep_us(10)
+    pinUltrasonicTrig.off()
 
-gateControl('open')
-time.sleep(1)
-gateControl('close')
+    # Membaca waktu yang dibutuhkan untuk ultrasonik kembali.
+    while pinUltrasonicEcho.value() == 0:
+        pulseStart = time.ticks_us()
+    while pinUltrasonicEcho.value() == 1:
+        pulseEnd = time.ticks_us()
+    pulseDuration = pulseEnd - pulseStart
+
+    # Menghitung jarak berdasarkan waktu yang dibutuhkan.
+    distance = (pulseDuration * 0.0343) / 2
+    return distance
+
+while True:
+    distance = measureDistance()
+    print(distance)
+    time.sleep(0.5)

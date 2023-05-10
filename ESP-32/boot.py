@@ -67,13 +67,16 @@ def connectToWifi():
 
 ## Kontrol buka tutup gerbang.
 def gateControl(command = 'close'):
+    currentPosition = pinPwmGateServo.duty()
     if command == 'open':
         targetPosition = 72
-        print('GATE: Membuka gerbang!')
+        if currentPosition != targetPosition:
+            print('GATE: Membuka gerbang!')
         pinPwmGateServo.duty(targetPosition)
     elif command == 'close':
         targetPosition = 120
-        print('GATE: Menutup gerbang!')
+        if currentPosition != targetPosition:
+            print('GATE: Menutup gerbang!')
         pinPwmGateServo.duty(targetPosition)
 
 ## Memnaca data jarak dengan sensor ultrasonik (cm).
@@ -113,7 +116,7 @@ def saveDeviceStateToStorage():
         jsonString = ujson.dumps(deviceState)
         file.write(jsonString)
 
-## Mengambol data device state dari API server.
+## Mengambil data device state dari API server.
 def getDeviceStateFromAPI():
     global deviceState, deviceStateAPI
     url = BASE_URL + '/api/device/state?from=esp-32'
@@ -184,7 +187,7 @@ def threadConnection(threadName, threadNumber):
                 deviceState = deviceStateAPI.copy()
 
         ## Thread limiter.
-        time.sleep(1)
+        time.sleep(2)
     
     threadRunCounter -= 1
     _thread.exit()
@@ -226,7 +229,7 @@ def threadHomeLight(threadName, threadNumber):
                 deviceState.setdefault('homeLight', {})['isActive'] = False
 
         # Thread limiter.
-        time.sleep(0.5)
+        time.sleep(2)
 
     # Proses thread selesai.
     threadRunCounter -= 1
@@ -269,7 +272,7 @@ def threadGardenLight(threadName, threadNumber):
                 deviceState.setdefault('gardenLight', {})['isActive'] = False
 
         # Thread limiter.
-        time.sleep(0.5)
+        time.sleep(2)
 
     # Proses thread selesai.
     threadRunCounter -= 1
@@ -302,15 +305,15 @@ def threadMontionDetector(threadName, threadNumber):
                 deviceState.setdefault('montionDetector', {})['isActive'] = True
                 updateDeviceStateToAPI()
                 postDeviceActivity('montionDetector', 'Terdeteksi gerakan!')
-                time.sleep(2)
+                time.sleep(1)
                 pinBuzzer.off()
-                time.sleep(5)
+                time.sleep(3)
             else:
                 pinBuzzer.off()
                 deviceState.setdefault('montionDetector', {})['isActive'] = False
 
         # Thread limiter.
-        time.sleep(0.5)
+        time.sleep(2)
 
     # Proses thread selesai.
     threadRunCounter -= 1
@@ -340,12 +343,12 @@ def threadAutomaticGate(threadName, threadNumber):
             pinPwmGateServo = machine.PWM(machine.Pin(SERVO_PIN), freq=50)
             
             # Deteksi objek.
-            minDistance = 10
-            if ultrasonikDistanceValue <= 10:
+            minDistance = 15
+            if ultrasonikDistanceValue <= minDistance:
                 # Menunggu konfirmasi ulang.
                 time.sleep(1.5)
                 ultrasonikDistanceValue = measureDistance()
-                if ultrasonikDistanceValue > 10:
+                if ultrasonikDistanceValue > minDistance:
                     continue
                 
                 # Membuka gerbang.
@@ -356,9 +359,9 @@ def threadAutomaticGate(threadName, threadNumber):
                     time.sleep(5)
             else:
                 # Menunggu konfirmasi ulang.
-                time.sleep(5)
+                time.sleep(3)
                 ultrasonikDistanceValue = measureDistance()
-                if ultrasonikDistanceValue <= 10:
+                if ultrasonikDistanceValue <= minDistance:
                     continue
 
                 # Menutup gerbang.
@@ -368,7 +371,7 @@ def threadAutomaticGate(threadName, threadNumber):
                     postDeviceActivity('automaticGate', 'Gerbang tertutup!')
 
         # Thread limiter.
-        time.sleep(0.5)
+        time.sleep(1)
 
     # Proses thread selesai.
     threadRunCounter -= 1
